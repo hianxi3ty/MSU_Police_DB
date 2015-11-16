@@ -1,0 +1,6 @@
+CREATE TABLE reports (casenum VARCHAR(10),
+report_date VARCHAR(20),
+occurred_date VARCHAR(30),
+incident VARCHAR(255),
+location VARCHAR(30),
+disposition VARCHAR(255));
