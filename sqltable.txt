@@ -62,7 +62,7 @@ COLLATE = utf8_general_ci;
 -- Populate the 3 values into Clery Location 
 -- ----------------------------------------------------------------------------
 
-INSERT INTO CLERY_LOCATIONS (CleryLocation)
+INSERT INTO Clery.CLERY_LOCATIONS (CleryLocation)
 VALUES ("On Campus"), ("Off Campus"), ("Public Property");
 
 -- ----------------------------------------------------------------------------
@@ -128,7 +128,7 @@ COLLATE = utf8_general_ci;
 -- Populate values into outcome - similar to enum
 -- ----------------------------------------------------------------------------
 
-INSERT INTO OUTCOMES (OutcomeID, OutcomeType)
+INSERT INTO Clery.OUTCOMES (OutcomeID, OutcomeType)
 VALUES (1, "Open"), (2, "Pending"), (3, "Closed");
 
 -- ----------------------------------------------------------------------------
