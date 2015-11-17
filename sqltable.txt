@@ -1,6 +1,232 @@
-CREATE TABLE reports (casenum VARCHAR(10),
-report_date VARCHAR(20),
-occurred_date VARCHAR(30),
-incident VARCHAR(255),
-location VARCHAR(30),
-disposition VARCHAR(255));
+-- ----------------------------------------------------------------------------
+-- CSCI - 440 Database 
+-- Project Report 3
+-- Instructor:  Dr. Mike Wittie
+-- Authors:  Matthew Gannon, Erik McLaughlin and Andrew Odonnell
+-- Database Name: Clery
+-- ----------------------------------------------------------------------------
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------------------------------------------------------
+-- Schema Clery - our database!!!
+-- ----------------------------------------------------------------------------
+DROP SCHEMA IF EXISTS `Clery` ;
+CREATE SCHEMA IF NOT EXISTS `Clery` COLLATE utf8_general_ci ;
+
+-- ----------------------------------------------------------------------------
+-- Table Clery.CATEGORY
+-- This table is the category of the crime.  Description of category and
+-- whether it is designated a hate crime.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Clery`.`CATEGORY` (
+  `CategoryName` VARCHAR(20) NOT NULL,
+  `Arrests` VARCHAR(1) NULL,
+  `Referrals` VARCHAR(1) NULL,
+  `CategoryDescription` LONGTEXT NULL,
+  `HateCrime` VARCHAR(1) NULL,
+  PRIMARY KEY (`CategoryName`))
+COLLATE = utf8_general_ci;
+
+-- ----------------------------------------------------------------------------
+-- Table Clery.CRIMES
+-- This table is a list of crimes.  It holds their descriptions and each crime
+-- is categorized.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Clery`.`CRIMES` (
+  `CrimeID` INT NOT NULL AUTO_INCREMENT,
+  `CName` VARCHAR(20) NOT NULL,
+  `Clevel` INT NULL,
+  `CDescription` LONGTEXT NULL,
+  `CategoryName` VARCHAR(20) NOT NULL,
+  PRIMARY KEY (`CrimeID`),
+  CONSTRAINT `FK_CRIMES_CATEGORY`
+    FOREIGN KEY (`CategoryName`)
+    REFERENCES `Clery`.`CATEGORY` (`CategoryName`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+COLLATE = utf8_general_ci;
+
+-- ----------------------------------------------------------------------------
+-- Table Clery.CLERY_LOCATIONS
+-- Enum is not available in microsoft sql server.
+-- This table is the lists the three available Clery location types.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Clery`.`CLERY_LOCATIONS` (
+  `CleryLocationID` INT NOT NULL AUTO_INCREMENT,
+  `CleryLocation` VARCHAR(15) NOT NULL,
+  PRIMARY KEY (`CleryLocationID`))
+COLLATE = utf8_general_ci;
+
+-- ----------------------------------------------------------------------------
+-- Populate the 3 values into Clery Location 
+-- ----------------------------------------------------------------------------
+
+INSERT INTO CLERY_LOCATIONS (CleryLocation)
+VALUES ("On Campus"), ("Off Campus"), ("Public Property");
+
+-- ----------------------------------------------------------------------------
+-- Table Clery.LOCATIONS
+-- This table is the basis for all locations.  All locations must be linked
+-- to some Clery location.  Map coordinates may be introduced at a later date.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Clery`.`LOCATIONS` (
+  `LocationID` INT NOT NULL AUTO_INCREMENT,
+  `CleryLocationsID` INT NOT NULL,
+  `MapCoordinates` INT NULL,
+  PRIMARY KEY (`LocationID`),
+    CONSTRAINT `FK_LOCATIONS_CLERY_LOCATIONS`
+    FOREIGN KEY (`LocationID`)
+    REFERENCES `Clery`.`CLERY_LOCATIONS` (`CleryLocationID`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+COLLATE = utf8_general_ci;
+
+
+-- ----------------------------------------------------------------------------
+-- Table Clery.STREET_ADDRESS
+-- This table is for a specific address
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Clery`.`STREET_ADDRESS` (
+  `LocationID` INT NOT NULL,
+  `Address` VARCHAR(50) NOT NULL,
+  PRIMARY KEY (`Address`),
+  CONSTRAINT `FK_STREET_ADDRESS_LOCATIONS`
+    FOREIGN KEY (`LocationID`)
+    REFERENCES `Clery`.`LOCATIONS` (`LocationID`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+COLLATE = utf8_general_ci;
+
+-- ----------------------------------------------------------------------------
+-- Table Clery.CAMPUS_LOCATION
+-- This table is for buildings or specific places on campus.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Clery`.`CAMPUS_LOCATION` (
+  `LocationID` INT NOT NULL,
+  `CampusLocationName` VARCHAR(50) NOT NULL,
+  PRIMARY KEY (`CampusLocationName`),
+  CONSTRAINT `FK_CAMPUS_LOCATION_LOCATIONS`
+    FOREIGN KEY (`LocationID`)
+    REFERENCES `Clery`.`LOCATIONS` (`LocationID`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+COLLATE = utf8_general_ci;
+
+-- ----------------------------------------------------------------------------
+-- Table Clery.OUTCOMES
+-- This table table is a preset of 3 options for case resolution.
+-- Enum is not available in microsoft sql server.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Clery`.`OUTCOMES` (
+  `OutcomeID` INT NOT NULL,
+  `OutcomeType` VARCHAR(7) NOT NULL,
+  PRIMARY KEY (`OutcomeID`))
+COLLATE = utf8_general_ci;
+
+-- ----------------------------------------------------------------------------
+-- Populate values into outcome - similar to enum
+-- ----------------------------------------------------------------------------
+
+INSERT INTO OUTCOMES (OutcomeID, OutcomeType)
+VALUES (1, "Open"), (2, "Pending"), (3, "Closed");
+
+-- ----------------------------------------------------------------------------
+-- Table Clery.DISPOSITION
+-- This table contains information pertaining to the outcome of the incident.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Clery`.`DISPOSITION` (
+  `DispositionID` INT NOT NULL,
+  `Description` LONGTEXT NULL,
+  `Response` VARCHAR(50) NULL,
+  `OutcomeID` INT NOT NULL,
+  PRIMARY KEY (`DispositionID`),
+  CONSTRAINT `FK_DISPOSITION_DISPOSITION`
+    FOREIGN KEY (`OutcomeID`)
+    REFERENCES `Clery`.`OUTCOMES` (`OutcomeID`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+COLLATE = utf8_general_ci;
+
+-- ----------------------------------------------------------------------------
+-- Table Clery.CASE
+-- This table is the Case information.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Clery`.`CASE` (
+  `CaseNumber` VARCHAR(12) NOT NULL,
+  `CID` INT NULL,
+  `Disposition` INT NOT NULL,
+  `OccuredStartTime` DATETIME NULL,
+  `OccuredEndTime` DATETIME NULL,
+  `IncidentDescription` LONGTEXT NULL,
+  `ReportDateTime` DATETIME NULL,
+  PRIMARY KEY (`CaseNumber`),
+  CONSTRAINT `FK_CASE_DISPOSITION`
+    FOREIGN KEY (`Disposition`)
+    REFERENCES `Clery`.`DISPOSITION` (`DispositionID`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+COLLATE = utf8_general_ci;
+
+-- ----------------------------------------------------------------------------
+-- Table Clery.CRIME_CASE_MAP
+-- This table links Crimes to Cases in a M:N relationship.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Clery`.`CRIME_CASE_MAP` (
+  `CrimeID` INT NOT NULL,
+  `CaseNumber` VARCHAR(12) NOT NULL,
+  PRIMARY KEY (`CrimeID`, `CaseNumber`),
+  CONSTRAINT `FK_CRIME_CASE_MAP_CRIMES`
+    FOREIGN KEY (`CrimeID`)
+    REFERENCES `Clery`.`CRIMES` (`CrimeID`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `FK_CRIME_CASE_MAP_CASE`
+    FOREIGN KEY (`CaseNumber`)
+    REFERENCES `Clery`.`CASE` (`CaseNumber`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+COLLATE = utf8_general_ci;
+
+-- ----------------------------------------------------------------------------
+-- Table Clery.CASE_LOCATION_MAP
+-- This table links Cases to Location in a M:N relationship.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Clery`.`CASE_LOCATION_MAP` (
+  `CaseNumber` VARCHAR(12) NOT NULL,
+  `LocationID` INT NOT NULL,
+  PRIMARY KEY (`CaseNumber`, `LocationID`),
+  CONSTRAINT `FK_CASE_LOCATION_MAP_LOCATIONS`
+    FOREIGN KEY (`LocationID`)
+    REFERENCES `Clery`.`LOCATIONS` (`LocationID`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `FK_CASE_LOCATION_MAP_CASE`
+    FOREIGN KEY (`CaseNumber`)
+    REFERENCES `Clery`.`CASE` (`CaseNumber`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+COLLATE = utf8_general_ci;
+
+-- ----------------------------------------------------------------------------
+-- Table Clery.FIRE
+-- This table is for the fire logs.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `Clery`.`FIRE` (
+  `ReportDate` DATETIME NOT NULL,
+  `IncidentDate` DATETIME NULL,
+  `CrimeID` INT NULL,
+  `Description` LONGTEXT NULL,
+  `LocationID` INT NULL,
+  PRIMARY KEY (`ReportDate`),
+  CONSTRAINT `FK_FIRE_CRIMES`
+    FOREIGN KEY (`CrimeID`)
+    REFERENCES `Clery`.`CRIMES` (`CrimeID`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `FK_FIRE_LOCATIONS`
+    FOREIGN KEY (`LocationID`)
+    REFERENCES `Clery`.`LOCATIONS` (`LocationID`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+COLLATE = utf8_general_ci;
